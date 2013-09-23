@@ -1,0 +1,61 @@
+{
+    "builders": [
+        {
+            "type": "virtualbox",
+            "guest_os_type": "Ubuntu_64",
+            "iso_url": "http://127.0.0.1/ubuntu-12.04.3-server-amd64.iso",
+            "iso_checksum": "2cbe868812a871242cdcdd8f2fd6feb9",
+            "iso_checksum_type": "md5",
+            "boot_wait": "4s",
+            "ssh_username": "root",
+            "ssh_password": "r00tme",
+            "ssh_wait_timeout": "2000s",
+            "disk_size": 40000,
+            "guest_additions_path": "",
+            "http_directory": "configs",
+            "http_port_min": 8000,
+            "http_port_max": 9000,
+            "shutdown_command": "shutdown -P now",
+            "output_directory": "./boxout/",
+            "boot_command": [
+                "<esc><esc><enter><wait>",
+                "/install/vmlinuz noapic preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg <wait>",
+                "debian-installer=en_US auto locale=en_US kbd-chooser/method=gb ",
+                "hostname=vagrant-precise64 ",
+                "fb=false debconf/frontend=noninteractive ",
+                "keyboard-configuration/modelcode=SKIP keyboard-configuration/layout=GB ",
+                "keyboard-configuration/variant=GB console-setup/ask_detect=false ",
+                "initrd=/install/initrd.gz -- <enter>"
+            ],
+            "vboxmanage": [
+             [
+                "modifyvm",
+                "{{.Name}}",
+                "--memory",
+                "512"
+             ],
+             [
+               "modifyvm",
+               "{{.Name}}",
+               "--cpus",
+               "1"
+             ]
+            ]
+        }
+    ],
+   "provisioners": [{
+      "type": "shell",
+      "inline": [
+        "sleep 30",
+        "apt-get install -y software-properties-common",
+        "apt-get install -y python-software-properties",
+        "add-apt-repository -y ppa:rquillo/ansible",
+        "apt-get update",
+        "apt-get install -y ansible",
+        "wget http://www.ansibleworks.com/releases/awx/setup/awx-setup-release_1.3.0.tar.gz",
+        "tar -xvzf awx-setup-release_1.3.0.tar.gz",
+        "cd awx-setup-release_1.3.0",
+        "./setup.sh"
+      ]
+   }]
+}
