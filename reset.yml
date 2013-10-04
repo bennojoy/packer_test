@@ -1,0 +1,42 @@
+- hosts: localhost
+  sudo: true
+  tasks:
+   - name: Inform that we have already run the reconfigure
+     shell: touch /etc/awx.reconfigured
+ 
+   - name: Reset the admin password
+     shell: echo "from django.contrib.auth.models import User; passwd = User.objects.make_random_password(length=8); usr = User.objects.get(username='admin'); usr.set_password(passwd); usr.save(); print passwd" | awx-manage shell
+     sudo_user: awx
+     register: admin_passwd
+
+   - name: setup secret key for settings
+     command: python -c "import uuid; file('/etc/awx/SECRET_KEY', 'wb').write(uuid.uuid4().hex)" 
+
+   - name: get a random password for database
+     shell: openssl rand -base64 32
+     register: db_password
+
+   - name: Update the postgres awx passwd 
+     postgresql_user: name=awx password={{ db_password.stdout }} login_user=postgres
+     sudo_user: postgres
+
+   - name: update the DB password in settings.py
+     lineinfile: >
+      dest=/etc/awx/settings.py
+      regexp="^ *'PASSWORD':"
+      line="       'PASSWORD': '{{ db_password.stdout }}',"
+      state=present
+    
+   - name: Restart the services
+     service: name={{ item  }} state=restarted
+     with_items:
+      - supervisor
+      - apache2
+   
+   - name: Create the credentials file
+     shell: echo "Admin Password  {{ admin_passwd.stdout }}" > /root/.awx_pass
+
+
+  
+     
+

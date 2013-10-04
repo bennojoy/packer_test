@@ -1,0 +1,5 @@
+#!/bin/sh -e 
+
+test ! -e /root/.awx_pass && ansible-playbook -i "localhost," -c local /root/awx_reset.yml
+
+exit 0
